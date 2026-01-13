@@ -1,35 +1,112 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import { Navbar } from "./components/Navbar";
+import { Dashboard } from "./components/Dashboard";
+import { FilterBar } from "./components/FilterBar";
+import { TodoCard } from "./components/TodoCard";
+import { TodoForm } from "./components/TodoForm";
+import { useTodos } from "./context/TodoContext";
 
-function App() {
-  const [count, setCount] = useState(0)
+function AppContent() {
+  const { todos, addTodo, updateTodo, deleteTodo, toggleComplete } = useTodos();
+  const [showForm, setShowForm] = useState(false);
+  const [editingTodo, setEditingTodo] = useState(null);
+  const [filters, setFilters] = useState({
+    search: "",
+    category: "all",
+    priority: "all",
+    status: "all",
+  });
+
+  const filteredTodos = todos.filter((todo) => {
+    if (!todo || !todo.id) return false;
+
+    const searchLower = filters.search.toLowerCase();
+    const matchesSearch =
+      todo.title.toLowerCase().includes(searchLower) ||
+      (todo.description &&
+        todo.description.toLowerCase().includes(searchLower));
+
+    const matchesCategory =
+      filters.category === "all" || todo.category === filters.category;
+
+    const matchesPriority =
+      filters.priority === "all" || todo.priority === filters.priority;
+
+    const matchesStatus =
+      filters.status === "all" ||
+      (filters.status === "completed" && todo.completed) ||
+      (filters.status === "pending" && !todo.completed);
+
+    return matchesSearch && matchesCategory && matchesPriority && matchesStatus;
+  });
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+
+      <div className="w-screen px-6 py-6">
+        <Dashboard />
+        <FilterBar filters={filters} onFilterChange={setFilters} />
+
+        <button
+          onClick={() => {
+            setEditingTodo(null);
+            setShowForm(true);
+          }}
+          className="mb-4 px-6 py-3 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-white font-medium hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg transition-all"
+        >
+          Tambah Todo
         </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+
+        <div className="space-y-4">
+          {filteredTodos && filteredTodos.length > 0 ? (
+            filteredTodos.map((todo) => (
+              <TodoCard
+                key={todo.id}
+                todo={todo}
+                onEdit={(todo) => {
+                  setEditingTodo(todo);
+                  setShowForm(true);
+                }}
+                onDelete={deleteTodo}
+                onToggle={toggleComplete}
+              />
+            ))
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-lg">
+                {todos.length === 0
+                  ? 'Belum ada todo. Klik "Tambah Todo" untuk memulai.'
+                  : "Tidak ada todo yang sesuai dengan filter."}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+
+      {showForm && (
+        <TodoForm
+          todo={editingTodo}
+          onSave={async (data) => {
+            try {
+              if (editingTodo) {
+                await updateTodo(editingTodo.id, data);
+              } else {
+                await addTodo(data);
+              }
+              setShowForm(false);
+              setEditingTodo(null);
+            } catch (error) {
+              alert(`Gagal menyimpan todo: ${error.message}`);
+            }
+          }}
+          onCancel={() => setShowForm(false)}
+        />
+      )}
+    </div>
+  );
 }
 
-export default App
+export default function App() {
+  return <AppContent />;
+}
