@@ -1,6 +1,6 @@
 Aplikasi To-Do List harian yang dibangun dengan React dan Express, menggunakan Firebase Firestore sebagai database.
 
-## 🚀 Tech Stack
+## 🚀 Tech Stacks
 
 ### Frontend
 - **React 19** - JavaScript library untuk membangun UI
