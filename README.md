@@ -14,6 +14,7 @@ Aplikasi To-Do List harian yang dibangun dengan React dan Express, menggunakan P
 - **Express.js** - Web framework
 - **PostgreSQL** - Database relasional untuk CRUD todo
 - **pg** - PostgreSQL client untuk Node.js
+- **JWT + RBAC** - Login, role admin/user, dan proteksi endpoint
 - **CORS** - Cross-Origin Resource Sharing
 
 ## 📁 Project Structure
@@ -72,7 +73,7 @@ ToDoListHarian/
 ### Prerequisites
 - Node.js (v14 atau lebih tinggi)
 - npm
-- Firebase project dengan Firestore database
+- PostgreSQL aktif di Laragon
 
 ### Setup
 
@@ -94,17 +95,18 @@ cd frontend
 npm install
 ```
 
-4. **Konfigurasi Firebase**
-   - Dapatkan `serviceAccount.json` dari Firebase Console
-   - Letakkan di folder `backend/`
-   - File ini sudah di-gitignore untuk keamanan
+4. **Konfigurasi PostgreSQL Laragon**
+   - Buat database bernama `todokpl_db`
+   - Salin `backend/.env.example` menjadi `backend/.env`
+   - Sesuaikan `DB_USER` dan `DB_PASSWORD` jika berbeda dari default Laragon/PostgreSQL Anda
+   - Ganti `JWT_SECRET` dengan string panjang dan acak
 
 ### Detailed Backend Setup
 
-1. **Firebase Initialization**
-   - Buat project baru di [Firebase Console](https://console.firebase.google.com)
-   - Enable Firestore Database
-   - Create Service Account dan download JSON key
+1. **PostgreSQL Initialization**
+   - Pastikan PostgreSQL Laragon berjalan
+   - Buat database `todokpl_db`
+   - Tabel `todos` akan dibuat otomatis saat backend start
    
 2. **Backend Configuration**
    ```bash
@@ -114,17 +116,17 @@ npm install
 
 3. **File Structure untuk Backend**
    - `src/index.js` - Entry point server (port 5000)
-   - `src/config/firebase.js` - Firebase initialization dengan serviceAccount.json
+   - `src/config/database.js` - PostgreSQL connection pool dan table initialization
    - `src/routes/todo.routes.js` - Define endpoints: GET, POST, PUT, DELETE
    - `src/controllers/todo.controller.js` - Handle request logic
-   - `src/services/todo.service.js` - Firestore database operations
+   - `src/services/todo.service.js` - PostgreSQL database operations
    - `src/models/todo.model.js` - Todo data schema dan validation
    - `src/utils/response.js` - Standardized API response format
 
 4. **Dependencies Backend**
    - express (v4.18.2) - Web framework
    - cors (v2.8.5) - Enable cross-origin requests
-   - firebase-admin (v12.0.0) - Firebase Firestore
+   - pg (v8.20.0) - PostgreSQL client
    - nodemon (dev) - Auto-reload server saat development
 
 ### Detailed Frontend Setup
@@ -203,6 +205,14 @@ npm run preview
 
 Base URL: `http://localhost:5000/api/todos`
 
+### Auth
+```
+POST /api/auth/register
+POST /api/auth/login
+GET /api/auth/me
+Header protected route: Authorization: Bearer <token>
+```
+
 ### Get All Todos
 ```
 GET /api/todos
@@ -238,6 +248,11 @@ Response: { success: true, data: { message: "Todo deleted" } }
 
 ## ✨ Features
 
+- ✅ **Login & Register** - Akun pengguna dengan password hash
+- ✅ **JWT Token** - Proteksi API menggunakan Bearer token
+- ✅ **RBAC** - Role admin dapat melihat semua todo, user hanya todo miliknya
+- ✅ **Multi-table Database** - users, roles, permissions, categories, todos, activity logs
+- ✅ **Admin Panel** - Lihat pengguna dan aktivitas terbaru
 - ✅ **Create Todo** - Tambah todo baru dengan form modal
 - ✅ **Read Todo** - Lihat semua todos di dashboard
 - ✅ **Update Todo** - Edit todo yang sudah ada
@@ -253,7 +268,7 @@ Response: { success: true, data: { message: "Todo deleted" } }
 
 ```javascript
 {
-  id: string,                    // Firestore document ID
+  id: string,                    // PostgreSQL row ID
   title: string,                 // Required
   description: string,           // Optional
   category: string,              // 'work' | 'personal' | 'shopping' | 'health'
