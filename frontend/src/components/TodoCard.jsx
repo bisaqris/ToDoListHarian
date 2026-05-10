@@ -77,7 +77,7 @@ export const TodoCard = ({ todo, onEdit, onDelete, onToggle }) => {
       </div>
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 bg-opacity-30 flex items-center justify-center z-50 p-4 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm mx-4 animate-slideUp">
             <h3 className="text-2xl font-bold text-gray-900 mb-3">Hapus To-Do?</h3>
             <p className="text-gray-600 mb-6">Apakah Anda yakin ingin menghapus "{todo.title}"? Tindakan ini tidak dapat dibatalkan.</p>

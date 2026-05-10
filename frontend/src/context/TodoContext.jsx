@@ -1,20 +1,26 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "./AuthContext";
 
 const TodoContext = createContext();
 export const useTodos = () => useContext(TodoContext);
 
-const API_URL = "http://localhost:5000/api/todos"; // sesuaikan port backend
-
 export const TodoProvider = ({ children }) => {
+  const { API_BASE, token, authHeaders, isAdmin } = useAuth();
   const [todos, setTodos] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(false);
+  const API_URL = `${API_BASE}/todos`;
 
   // GET ALL
   const fetchTodos = async () => {
+    if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(API_URL);
+      const res = await fetch(API_URL, { headers: authHeaders });
       const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to fetch todos");
       const todoData = Array.isArray(json.data) ? json.data : (json.data ? [json.data] : []);
       setTodos(todoData);
     } catch (error) {
@@ -24,11 +30,42 @@ export const TodoProvider = ({ children }) => {
     setLoading(false);
   };
 
+  const fetchCategories = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/categories`, { headers: authHeaders });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to fetch categories");
+      setCategories(Array.isArray(json.data) ? json.data : []);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      setCategories([]);
+    }
+  };
+
+  const fetchAdminData = async () => {
+    if (!token || !isAdmin) return;
+    try {
+      const [usersRes, activityRes] = await Promise.all([
+        fetch(`${API_BASE}/users`, { headers: authHeaders }),
+        fetch(`${API_BASE}/activity`, { headers: authHeaders }),
+      ]);
+      const [usersJson, activityJson] = await Promise.all([
+        usersRes.json(),
+        activityRes.json(),
+      ]);
+      setUsers(usersRes.ok ? usersJson.data : []);
+      setActivities(activityRes.ok ? activityJson.data : []);
+    } catch (error) {
+      console.error("Error fetching admin data:", error);
+    }
+  };
+
   const addTodo = async (todo) => {
     try {
       const res = await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
         body: JSON.stringify(todo),
       });
       const json = await res.json();
@@ -39,6 +76,7 @@ export const TodoProvider = ({ children }) => {
       
       if (json.data && json.data.id) {
         setTodos(prev => [json.data, ...prev]);
+        fetchAdminData();
         return json.data;
       } else {
         throw new Error("Invalid response from server: missing data.id");
@@ -53,13 +91,15 @@ export const TodoProvider = ({ children }) => {
     try {
       const res = await fetch(`${API_URL}/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
         body: JSON.stringify(updates),
       });
-      if (!res.ok) throw new Error("Failed to update todo");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to update todo");
       setTodos(prev =>
-        prev.filter(t => t && t.id).map(t => (t.id === id ? { ...t, ...updates } : t))
+        prev.filter(t => t && t.id).map(t => (t.id === id ? json.data : t))
       );
+      fetchAdminData();
     } catch (error) {
       console.error("Error updating todo:", error);
       throw error;
@@ -68,8 +108,14 @@ export const TodoProvider = ({ children }) => {
 
   const deleteTodo = async (id) => {
     try {
-      await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+        headers: authHeaders,
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to delete todo");
       setTodos(prev => prev.filter(t => t.id !== id));
+      fetchAdminData();
     } catch (error) {
       console.error("Error deleting todo:", error);
       throw error;
@@ -83,18 +129,33 @@ export const TodoProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    fetchTodos();
-  }, []);
+    if (token) {
+      fetchTodos();
+      fetchCategories();
+      fetchAdminData();
+    } else {
+      setTodos([]);
+      setCategories([]);
+      setUsers([]);
+      setActivities([]);
+    }
+  }, [token, isAdmin]);
 
   return (
     <TodoContext.Provider
       value={{
         todos,
+        categories,
+        users,
+        activities,
         loading,
         addTodo,
         updateTodo,
         deleteTodo,
         toggleComplete,
+        fetchTodos,
+        fetchCategories,
+        fetchAdminData,
       }}
     >
       {children}

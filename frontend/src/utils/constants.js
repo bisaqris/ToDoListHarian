@@ -1,6 +1,6 @@
 import {
   Briefcase, Home, ShoppingCart,
-  Heart, GraduationCap, Star
+  Heart, GraduationCap, Users, Landmark
 } from "lucide-react";
 
 export const categories = [
@@ -9,6 +9,8 @@ export const categories = [
   { id: "shopping", name: "Belanja", icon: ShoppingCart, color: "green" },
   { id: "health", name: "Kesehatan", icon: Heart, color: "red" },
   { id: "education", name: "Pendidikan", icon: GraduationCap, color: "yellow" },
+  { id: "community", name: "Kegiatan Warga", icon: Users, color: "teal" },
+  { id: "public-service", name: "Layanan Publik", icon: Landmark, color: "indigo" },
 ];
 
 export const priorities = [
