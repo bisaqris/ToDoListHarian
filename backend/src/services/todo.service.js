@@ -1,6 +1,7 @@
 import { pool } from "../config/database.js";
 import { TodoModel } from "../models/todo.model.js";
 import { isAdmin } from "../utils/rbac.js";
+import { buildParameterizedUpdate, createRowMapper } from "../utils/parameterized.js";
 
 const formatDate = (date) => {
   if (!date) return null;
@@ -12,31 +13,44 @@ const formatDate = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-const toTodoResponse = (row) => ({
-  id: String(row.id),
-  userId: row.user_id ? String(row.user_id) : null,
-  ownerName: row.owner_name || null,
-  title: row.title,
-  description: row.description,
-  completed: row.completed,
-  priority: row.priority,
-  category: row.category_code || row.category,
-  categoryName: row.category_name || row.category,
-  dueDate: formatDate(row.due_date),
-  dueTime: row.due_time ? row.due_time.slice(0, 5) : "",
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
+const toTodoResponse = createRowMapper({
+  id: (row) => String(row.id),
+  userId: (row) => (row.user_id ? String(row.user_id) : null),
+  ownerName: (row) => row.owner_name || null,
+  title: "title",
+  description: "description",
+  completed: "completed",
+  status: "status",
+  statusName: (row) => row.status_name || row.status,
+  priority: "priority",
+  category: (row) => row.category_code || row.category,
+  categoryName: (row) => row.category_name || row.category,
+  dueDate: (row) => formatDate(row.due_date),
+  dueTime: (row) => (row.due_time ? row.due_time.slice(0, 5) : ""),
+  createdAt: "created_at",
+  updatedAt: "updated_at",
 });
+
+const todoUpdateFields = {
+  title: "title",
+  description: "description",
+  priority: "priority",
+  category: "category",
+  dueDate: "due_date",
+  dueTime: "due_time",
+};
 
 const todoSelect = `
   SELECT
     t.*,
     u.name AS owner_name,
     c.code AS category_code,
-    c.name AS category_name
+    c.name AS category_name,
+    s.name AS status_name
   FROM todos t
   LEFT JOIN users u ON u.id = t.user_id
   LEFT JOIN categories c ON c.id = t.category_id
+  LEFT JOIN todo_statuses s ON s.code = t.status
 `;
 
 const logActivity = async (client, { todoId, userId, action, details = {} }) => {
@@ -61,8 +75,8 @@ export const createTodo = async (data, user) => {
 
     const result = await client.query(
       `INSERT INTO todos
-        (user_id, category_id, title, description, completed, priority, category, due_date, due_time, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        (user_id, category_id, title, description, completed, status, priority, category, due_date, due_time, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [
         user.id,
@@ -70,6 +84,7 @@ export const createTodo = async (data, user) => {
         todo.title,
         todo.description,
         todo.completed,
+        todo.completed ? "completed" : "pending",
         todo.priority,
         category?.code || todo.category,
         todo.dueDate,
@@ -132,39 +147,36 @@ export const getTodoById = async (id, user) => {
 };
 
 export const updateTodo = async (id, data, user) => {
-  const allowedFields = {
-    title: "title",
-    description: "description",
-    completed: "completed",
-    priority: "priority",
-    category: "category",
-    dueDate: "due_date",
-    dueTime: "due_time",
-  };
+  const normalizedData = { ...data };
+  const updateFields = { ...todoUpdateFields };
 
-  const fields = Object.entries(data).filter(([key]) => allowedFields[key]);
+  delete normalizedData.completed;
+  delete normalizedData.status;
 
-  if (fields.length === 0) {
+  if (normalizedData.category) {
+    const categoryResult = await pool.query("SELECT id FROM categories WHERE code = $1", [
+      normalizedData.category,
+    ]);
+    normalizedData.categoryId = categoryResult.rows[0]?.id || null;
+    updateFields.categoryId = "category_id";
+  }
+
+  const preparedData = Object.fromEntries(
+    Object.entries(normalizedData).map(([key, value]) => {
+      if (key === "dueTime" && value === "") return [key, null];
+      if (key === "dueDate" && value === "") return [key, null];
+      return [key, value];
+    }),
+  );
+
+  const { setClauses, values, entries } = buildParameterizedUpdate(
+    preparedData,
+    updateFields,
+  );
+
+  if (entries.length === 0) {
     return null;
   }
-
-  if (data.category) {
-    const categoryResult = await pool.query("SELECT id FROM categories WHERE code = $1", [
-      data.category,
-    ]);
-    data.categoryId = categoryResult.rows[0]?.id || null;
-    fields.push(["categoryId", data.categoryId]);
-    allowedFields.categoryId = "category_id";
-  }
-
-  const setClauses = fields.map(
-    ([key], index) => `${allowedFields[key]} = $${index + 1}`,
-  );
-  const values = fields.map(([key, value]) => {
-    if (key === "dueTime" && value === "") return null;
-    if (key === "dueDate" && value === "") return null;
-    return value;
-  });
 
   const params = [...values, id];
   let ownerClause = "";
@@ -179,10 +191,10 @@ export const updateTodo = async (id, data, user) => {
   try {
     await client.query("BEGIN");
     const result = await client.query(
-    `UPDATE todos
-     SET ${setClauses.join(", ")}, updated_at = NOW()
-     WHERE id = $${values.length + 1} ${ownerClause}
-     RETURNING *`,
+      `UPDATE todos
+       SET ${setClauses.join(", ")}, updated_at = NOW()
+       WHERE id = $${values.length + 1} ${ownerClause}
+       RETURNING *`,
       params,
     );
 
@@ -195,7 +207,7 @@ export const updateTodo = async (id, data, user) => {
       todoId: id,
       userId: user.id,
       action: "updated",
-      details: data,
+      details: normalizedData,
     });
 
     await client.query("COMMIT");
@@ -206,6 +218,92 @@ export const updateTodo = async (id, data, user) => {
   } finally {
     client.release();
   }
+};
+
+export const transitionTodoStatus = async (id, event, user) => {
+  const params = [id];
+  let ownerClause = "";
+
+  if (!isAdmin(user)) {
+    params.push(user.id);
+    ownerClause = `AND t.user_id = $${params.length}`;
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const todoResult = await client.query(
+      `SELECT t.id, t.status
+       FROM todos t
+       WHERE t.id = $1 ${ownerClause}
+       FOR UPDATE`,
+      params,
+    );
+
+    const todo = todoResult.rows[0];
+    if (!todo) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+
+    const transitionResult = await client.query(
+      `SELECT from_status, to_status, event, label
+       FROM todo_status_transitions
+       WHERE from_status = $1 AND event = $2`,
+      [todo.status, event],
+    );
+    const transition = transitionResult.rows[0];
+
+    if (!transition) {
+      throw new Error(`Invalid transition '${event}' from status '${todo.status}'`);
+    }
+
+    await client.query(
+      `UPDATE todos
+       SET status = $1,
+           completed = $2,
+           updated_at = NOW()
+       WHERE id = $3`,
+      [transition.to_status, transition.to_status === "completed", id],
+    );
+
+    await logActivity(client, {
+      todoId: id,
+      userId: user.id,
+      action: "status_transition",
+      details: transition,
+    });
+
+    await client.query("COMMIT");
+    return getTodoById(id, user);
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+export const getTodoStatusTransitions = async (id, user) => {
+  const todo = await getTodoById(id, user);
+  if (!todo) return null;
+
+  const result = await pool.query(
+    `SELECT from_status, to_status, event, label
+     FROM todo_status_transitions
+     WHERE from_status = $1
+     ORDER BY id ASC`,
+    [todo.status],
+  );
+
+  return result.rows.map(createRowMapper({
+    fromStatus: "from_status",
+    toStatus: "to_status",
+    event: "event",
+    label: "label",
+  }));
 };
 
 export const deleteTodo = async (id, user) => {

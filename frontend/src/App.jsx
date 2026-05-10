@@ -10,7 +10,7 @@ import { useTodos } from "./context/TodoContext";
 import { useAuth } from "./context/AuthContext";
 
 function AppContent() {
-  const { todos, addTodo, updateTodo, deleteTodo, toggleComplete } = useTodos();
+  const { todos, addTodo, updateTodo, deleteTodo, toggleComplete, transitionTodoStatus } = useTodos();
   const { user, isAdmin, authLoading } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editingTodo, setEditingTodo] = useState(null);
@@ -50,6 +50,7 @@ function AppContent() {
 
     const matchesStatus =
       filters.status === "all" ||
+      todo.status === filters.status ||
       (filters.status === "completed" && todo.completed) ||
       (filters.status === "pending" && !todo.completed);
 
@@ -87,6 +88,7 @@ function AppContent() {
                 }}
                 onDelete={deleteTodo}
                 onToggle={toggleComplete}
+                onTransition={transitionTodoStatus}
               />
             ))
           ) : (

@@ -87,8 +87,10 @@ export const FilterBar = ({ filters, onFilterChange }) => {
           className="px-4 py-2.5 border border-gray-200 rounded-lg text-gray-900 bg-white hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
         >
           <option value="all">Semua Status</option>
-          <option value="pending">Pending</option>
-          <option value="completed">Completed</option>
+          <option value="pending">Menunggu</option>
+          <option value="in_progress">Dikerjakan</option>
+          <option value="completed">Selesai</option>
+          <option value="cancelled">Dibatalkan</option>
         </select>
       </div>
     </div>

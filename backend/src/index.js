@@ -18,7 +18,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/activity", activityRoutes);
 
-const PORT = 5000;
+const PORT = 3000;
 
 const startServer = async () => {
   await initDatabase();

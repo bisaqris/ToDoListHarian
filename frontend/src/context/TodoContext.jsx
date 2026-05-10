@@ -106,6 +106,25 @@ export const TodoProvider = ({ children }) => {
     }
   };
 
+  const transitionTodoStatus = async (id, event) => {
+    try {
+      const res = await fetch(`${API_URL}/${id}/status`, {
+        method: "PATCH",
+        headers: authHeaders,
+        body: JSON.stringify({ event }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to transition todo status");
+      setTodos(prev =>
+        prev.filter(t => t && t.id).map(t => (t.id === id ? json.data : t))
+      );
+      fetchAdminData();
+    } catch (error) {
+      console.error("Error transitioning todo status:", error);
+      throw error;
+    }
+  };
+
   const deleteTodo = async (id) => {
     try {
       const res = await fetch(`${API_URL}/${id}`, {
@@ -125,7 +144,8 @@ export const TodoProvider = ({ children }) => {
 
   const toggleComplete = (id) => {
     const todo = todos.find(t => t.id === id);
-    updateTodo(id, { completed: !todo.completed });
+    const event = todo.completed ? "reopen" : "complete";
+    transitionTodoStatus(id, event);
   };
 
   useEffect(() => {
@@ -151,6 +171,7 @@ export const TodoProvider = ({ children }) => {
         loading,
         addTodo,
         updateTodo,
+        transitionTodoStatus,
         deleteTodo,
         toggleComplete,
         fetchTodos,
