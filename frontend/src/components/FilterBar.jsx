@@ -1,7 +1,9 @@
 import { Search, X } from "lucide-react";
-import { categories, priorities } from "../utils/constants";
+import { priorities } from "../utils/constants";
+import { useTodos } from "../context/TodoContext";
 
 export const FilterBar = ({ filters, onFilterChange }) => {
+  const { categories } = useTodos();
   const hasActiveFilters = filters.search || filters.category !== "all" || filters.priority !== "all" || filters.status !== "all";
 
   const clearFilters = () => {
@@ -56,7 +58,7 @@ export const FilterBar = ({ filters, onFilterChange }) => {
         >
           <option value="all">Semua Kategori</option>
           {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
+            <option key={cat.id} value={cat.code}>
               {cat.name}
             </option>
           ))}
