@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS todos (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT '',
+  completed BOOLEAN NOT NULL DEFAULT FALSE,
+  priority VARCHAR(20) NOT NULL DEFAULT 'medium',
+  category VARCHAR(50) NOT NULL DEFAULT 'general',
+  due_date DATE,
+  due_time TIME,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

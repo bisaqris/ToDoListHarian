@@ -1,4 +1,4 @@
-Aplikasi To-Do List harian yang dibangun dengan React dan Express, menggunakan Firebase Firestore sebagai database.
+Aplikasi To-Do List harian yang dibangun dengan React dan Express, menggunakan PostgreSQL sebagai database.
 
 ## 🚀 Tech Stack
 
@@ -12,7 +12,8 @@ Aplikasi To-Do List harian yang dibangun dengan React dan Express, menggunakan F
 ### Backend
 - **Node.js** - JavaScript runtime
 - **Express.js** - Web framework
-- **Firebase Admin SDK** - Firebase authentication dan Firestore
+- **PostgreSQL** - Database relasional untuk CRUD todo
+- **pg** - PostgreSQL client untuk Node.js
 - **CORS** - Cross-Origin Resource Sharing
 
 ## 📁 Project Structure
@@ -33,8 +34,7 @@ ToDoListHarian/
 │   │   ├── context/
 │   │   │   └── TodoContext.jsx        # Global state management
 │   │   ├── utils/
-│   │   │   ├── constants.js           # Categories & priorities
-│   │   │   └── mockFirebase.js
+│   │   │   └── constants.js           # Categories & priorities
 │   │   ├── App.jsx                    # Main app component
 │   │   ├── main.jsx                   # Entry point
 │   │   ├── index.css                  # Global styles & animations
@@ -46,7 +46,7 @@ ToDoListHarian/
 ├── backend/
 │   ├── src/
 │   │   ├── config/
-│   │   │   └── firebase.js            # Firebase initialization
+│   │   │   └── database.js            # PostgreSQL connection pool
 │   │   ├── controllers/
 │   │   │   └── todo.controller.js     # Request handlers
 │   │   ├── models/
@@ -59,7 +59,8 @@ ToDoListHarian/
 │   │   │   └── response.js            # Response formatter
 │   │   └── index.js                   # Server entry point
 │   ├── package.json
-│   ├── serviceAccount.json            # Firebase credentials (gitignored)
+│   ├── database/
+│   │   └── schema.sql                 # SQL schema for todos table
 │   └── .env                           # Environment variables (gitignored)
 │
 └── .gitignore
