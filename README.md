@@ -240,6 +240,16 @@ Body: { ...fields to update }
 Response: { success: true, data: { message: "Todo updated" } }
 ```
 
+### Todo Status Automata
+```
+GET /api/todos/:id/transitions
+Response: { success: true, data: [{ fromStatus, toStatus, event, label }] }
+
+PATCH /api/todos/:id/status
+Body: { event: "start" | "pause" | "complete" | "cancel" | "reopen" }
+Response: { success: true, data: { id, status, statusName, completed, ... } }
+```
+
 ### Delete Todo
 ```
 DELETE /api/todos/:id
@@ -253,6 +263,8 @@ Response: { success: true, data: { message: "Todo deleted" } }
 - ✅ **RBAC** - Role admin dapat melihat semua todo, user hanya todo miliknya
 - ✅ **Multi-table Database** - users, roles, permissions, categories, todos, activity logs
 - ✅ **Admin Panel** - Lihat pengguna dan aktivitas terbaru
+- ✅ **Automata Status Todo** - Workflow `pending -> in_progress -> completed/cancelled` divalidasi dari tabel transisi
+- ✅ **Parameterized Utilities** - Helper reusable untuk row mapping dan parameterized SQL update
 - ✅ **Create Todo** - Tambah todo baru dengan form modal
 - ✅ **Read Todo** - Lihat semua todos di dashboard
 - ✅ **Update Todo** - Edit todo yang sudah ada
@@ -273,6 +285,8 @@ Response: { success: true, data: { message: "Todo deleted" } }
   description: string,           // Optional
   category: string,              // 'work' | 'personal' | 'shopping' | 'health'
   priority: string,              // 'low' | 'medium' | 'high'
+  status: string,                // 'pending' | 'in_progress' | 'completed' | 'cancelled'
+  statusName: string,            // Label status untuk UI
   dueDate: string,              // YYYY-MM-DD format
   dueTime: string,              // HH:mm format
   completed: boolean,            // Default: false
@@ -298,3 +312,14 @@ Response: { success: true, data: { message: "Todo deleted" } }
 - Use `npm run dev` untuk development dengan hot reload
 - Use `npm run build` untuk production build
 - Use `npm run lint` untuk check code quality
+
+## ✅ Requirement KPL
+
+| Requirement | Status | Implementasi |
+|---|---|---|
+| Automata | Terpenuhi | Status todo dikelola sebagai finite-state machine melalui tabel `todo_statuses` dan `todo_status_transitions`. API `PATCH /api/todos/:id/status` hanya menerima event yang valid untuk status saat ini. |
+| Table-driven construction | Terpenuhi | Role-permission, kategori, status, dan transisi status semua digerakkan oleh tabel database. Field update juga memakai field map. |
+| Generics/Parameterization | Terpenuhi | SQL memakai parameter `$1`, `$2`, dan helper reusable `createRowMapper` serta `buildParameterizedUpdate` untuk mapping dan update yang dapat diparameterkan. |
+| Runtime Config | Terpenuhi | Koneksi PostgreSQL, JWT secret, masa berlaku token, dan admin default dibaca dari `.env`. |
+| API | Terpenuhi | REST API tersedia untuk auth, todo, status automata, users, categories, dan activity. |
+| Code Reuse/Libraries | Terpenuhi | Struktur service/controller/routes/utils reusable, serta library Express, pg, React, Vite, Tailwind, Lucide, dan crypto Node.js. |

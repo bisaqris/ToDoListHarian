@@ -58,6 +58,22 @@ export const initDatabase = async () => {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS todo_statuses (
+      code VARCHAR(30) PRIMARY KEY,
+      name VARCHAR(80) NOT NULL,
+      description TEXT DEFAULT '',
+      is_terminal BOOLEAN NOT NULL DEFAULT FALSE
+    );
+
+    CREATE TABLE IF NOT EXISTS todo_status_transitions (
+      id SERIAL PRIMARY KEY,
+      from_status VARCHAR(30) NOT NULL REFERENCES todo_statuses(code) ON DELETE CASCADE,
+      to_status VARCHAR(30) NOT NULL REFERENCES todo_statuses(code) ON DELETE CASCADE,
+      event VARCHAR(40) NOT NULL,
+      label VARCHAR(80) NOT NULL,
+      UNIQUE (from_status, event)
+    );
+
     CREATE TABLE IF NOT EXISTS todos (
       id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -65,6 +81,7 @@ export const initDatabase = async () => {
       title VARCHAR(255) NOT NULL,
       description TEXT DEFAULT '',
       completed BOOLEAN NOT NULL DEFAULT FALSE,
+      status VARCHAR(30) NOT NULL DEFAULT 'pending' REFERENCES todo_statuses(code),
       priority VARCHAR(20) NOT NULL DEFAULT 'medium',
       category VARCHAR(50) NOT NULL DEFAULT 'general',
       due_date DATE,
@@ -83,14 +100,46 @@ export const initDatabase = async () => {
     );
   `);
 
+  await seedStatusAutomata();
+
   await pool.query(`
     ALTER TABLE todos ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
     ALTER TABLE todos ADD COLUMN IF NOT EXISTS category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL;
     ALTER TABLE todos ADD COLUMN IF NOT EXISTS due_time TIME;
     ALTER TABLE todos ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+    ALTER TABLE todos ADD COLUMN IF NOT EXISTS status VARCHAR(30) NOT NULL DEFAULT 'pending' REFERENCES todo_statuses(code);
   `);
 
   await seedDatabase();
+};
+
+const seedStatusAutomata = async () => {
+  await pool.query(`
+    INSERT INTO todo_statuses (code, name, description, is_terminal)
+    VALUES
+      ('pending', 'Menunggu', 'Tugas sudah dibuat tetapi belum dikerjakan', FALSE),
+      ('in_progress', 'Dikerjakan', 'Tugas sedang diproses', FALSE),
+      ('completed', 'Selesai', 'Tugas sudah selesai', TRUE),
+      ('cancelled', 'Dibatalkan', 'Tugas dibatalkan', TRUE)
+    ON CONFLICT (code) DO UPDATE SET
+      name = EXCLUDED.name,
+      description = EXCLUDED.description,
+      is_terminal = EXCLUDED.is_terminal;
+
+    INSERT INTO todo_status_transitions (from_status, to_status, event, label)
+    VALUES
+      ('pending', 'in_progress', 'start', 'Mulai'),
+      ('pending', 'completed', 'complete', 'Selesaikan'),
+      ('pending', 'cancelled', 'cancel', 'Batalkan'),
+      ('in_progress', 'pending', 'pause', 'Tunda'),
+      ('in_progress', 'completed', 'complete', 'Selesaikan'),
+      ('in_progress', 'cancelled', 'cancel', 'Batalkan'),
+      ('completed', 'in_progress', 'reopen', 'Buka Lagi'),
+      ('cancelled', 'pending', 'reopen', 'Buka Lagi')
+    ON CONFLICT (from_status, event) DO UPDATE SET
+      to_status = EXCLUDED.to_status,
+      label = EXCLUDED.label;
+  `);
 };
 
 const seedDatabase = async () => {
@@ -170,4 +219,13 @@ const seedDatabase = async () => {
      WHERE user_id IS NULL`,
     [adminEmail],
   );
+
+  await pool.query(`
+    UPDATE todos
+    SET status = CASE
+      WHEN completed = TRUE THEN 'completed'
+      ELSE 'pending'
+    END
+    WHERE status IS NULL OR status = '';
+  `);
 };
