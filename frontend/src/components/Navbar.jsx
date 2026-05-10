@@ -11,7 +11,7 @@ export const Navbar = () => {
           <h1 className="text-lg sm:text-xl font-semibold text-gray-800">
             To-Do List Harian
           </h1>
-          <p className="text-xs text-gray-500">Produktivitas pribadi dan koordinasi masyarakat</p>
+          <p className="text-xs text-gray-500">Personal Todo list harian</p>
         </div>
 
         <div className="flex items-center gap-3">
