@@ -9,14 +9,14 @@ export default function History() {
   );
 
   return (
-    <div className="w-screen p-6">
+    <section className="w-screen p-6">
       <div className="w-full mx-auto bg-white rounded-xl shadow-sm border border-gray-100 p-6  md:p-8">
         <div className="mb-6 border-b border-gray-100 pb-4">
           <h1 className="text-2xl font-bold text-gray-800">
-            Riwayat Aktivitas
+            History Activity
           </h1>
           <p className="text-gray-500 mt-1">
-            Daftar tugas yang telah diselesaikan atau dihapus.
+            Daftar task yang telah diselesaikan.
           </p>
         </div>
 
@@ -49,6 +49,6 @@ export default function History() {
           )}
         </div>
       </div>
-    </div>
+    </section>
   );
 }

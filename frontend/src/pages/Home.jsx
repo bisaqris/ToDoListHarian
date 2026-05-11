@@ -45,7 +45,7 @@ export default function Home() {
   });
   
   return (
-    <div className="w-screen p-6">
+    <section className="w-screen p-6">
         <Dashboard />
       {isAdmin && <AdminPanel />}
       
@@ -106,6 +106,6 @@ export default function Home() {
           onCancel={() => setShowForm(false)}
         />
       )}
-    </div>
+    </section>
   );
 }
