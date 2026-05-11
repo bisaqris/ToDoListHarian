@@ -8,7 +8,14 @@ import { useTodos } from "../context/TodoContext";
 import { useAuth } from "../context/AuthContext";
 
 export default function Home() {
-  const { todos, addTodo, updateTodo, deleteTodo, toggleComplete, transitionTodoStatus } = useTodos();
+  const {
+    todos,
+    addTodo,
+    updateTodo,
+    deleteTodo,
+    toggleComplete,
+    transitionTodoStatus,
+  } = useTodos();
   const { isAdmin } = useAuth();
 
   const [showForm, setShowForm] = useState(false);
@@ -43,12 +50,12 @@ export default function Home() {
 
     return matchesSearch && matchesCategory && matchesPriority && matchesStatus;
   });
-  
+
   return (
     <section className="w-screen p-6">
-        <Dashboard />
+      <Dashboard />
       {isAdmin && <AdminPanel />}
-      
+
       <FilterBar filters={filters} onFilterChange={setFilters} />
 
       <button
@@ -56,9 +63,10 @@ export default function Home() {
           setEditingTodo(null);
           setShowForm(true);
         }}
-        className="mb-4 px-6 py-3 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-white font-medium hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg transition-all"
+        className="relative overflow-hidden group mb-4 px-6 py-3 rounded-lg bg-gradient-to-r from-[#b900bc] to-[#009cff] text-white font-medium shadow-md hover:shadow-lg transition-all"
       >
-        Tambah Todo
+        <span className="absolute inset-0 w-full h-full bg-[#b900bc] transition-transform duration-300 ease-out transform -translate-x-full group-hover:translate-x-0"></span>
+        <span className="relative z-10">Tambah Todo</span>
       </button>
 
       <div className="space-y-4">

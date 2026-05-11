@@ -3,7 +3,6 @@ import { Navbar } from "./components/Navbar";
 import { AuthPage } from "./components/AuthPage";
 import { useAuth } from "./context/AuthContext";
 
-
 import Home from "./pages/Home";
 import History from "./pages/History";
 

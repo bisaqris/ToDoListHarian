@@ -5,9 +5,10 @@ import { useTodos } from "../context/TodoContext";
 
 export const TodoForm = ({ todo, onSave, onCancel }) => {
   const { categories } = useTodos();
-  const categoryOptions = categories.length > 0
-    ? categories.map((cat) => ({ id: cat.code, name: cat.name }))
-    : [{ id: "work", name: "Pekerjaan" }];
+  const categoryOptions =
+    categories.length > 0
+      ? categories.map((cat) => ({ id: cat.code, name: cat.name }))
+      : [{ id: "work", name: "Pekerjaan" }];
   const [formData, setFormData] = useState(
     todo || {
       title: "",
@@ -17,7 +18,7 @@ export const TodoForm = ({ todo, onSave, onCancel }) => {
       dueDate: new Date().toISOString().split("T")[0],
       dueTime: "",
       completed: false,
-    }
+    },
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -30,21 +31,21 @@ export const TodoForm = ({ todo, onSave, onCancel }) => {
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4 animate-fadeIn"
       onClick={onCancel}
     >
-      <div 
+      <div
         className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slideUp"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-800">
+          <h2 className="text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent from-[#b900bc] to-[#009cff]">
             {todo ? "Edit To-Do" : "Tambah To-Do Baru"}
           </h2>
           <button
             onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2 transition-all"
+            className="text-gray-400 hover:text-red-600 hover:bg-red-100 rounded-full p-2 transition-all"
           >
             <X size={24} />
           </button>
@@ -53,7 +54,7 @@ export const TodoForm = ({ todo, onSave, onCancel }) => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Judul *
+              Judul
             </label>
             <input
               type="text"
@@ -162,19 +163,22 @@ export const TodoForm = ({ todo, onSave, onCancel }) => {
             <button
               onClick={handleSubmit}
               disabled={isLoading}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="relative overflow-hidden group px-8 py-3 bg-gradient-to-r from-[#b900bc] to-[#009cff] text-white rounded-lg font-medium shadow-lg hover:shadow-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
-                <>
-                  <Loader size={18} className="animate-spin" />
-                  Menyimpan...
-                </>
-              ) : (
-                <>
-                  <Save size={18} />
-                  Simpan
-                </>
-              )}
+              <span className="absolute inset-0 w-full h-full bg-[#b900bc] transition-transform duration-300 ease-out transform -translate-x-full group-hover:translate-x-0"></span>
+              <span className="relative z-10 flex items-center gap-2">
+                {isLoading ? (
+                  <>
+                    <Loader size={18} className="animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : (
+                  <>
+                    <Save size={18} />
+                    Simpan
+                  </>
+                )}
+              </span>
             </button>
           </div>
         </div>
