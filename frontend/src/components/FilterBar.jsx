@@ -1,7 +1,9 @@
 import { Search, X } from "lucide-react";
-import { categories, priorities } from "../utils/constants";
+import { priorities } from "../utils/constants";
+import { useTodos } from "../context/TodoContext";
 
 export const FilterBar = ({ filters, onFilterChange }) => {
+  const { categories } = useTodos();
   const hasActiveFilters = filters.search || filters.category !== "all" || filters.priority !== "all" || filters.status !== "all";
 
   const clearFilters = () => {
@@ -56,7 +58,7 @@ export const FilterBar = ({ filters, onFilterChange }) => {
         >
           <option value="all">Semua Kategori</option>
           {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
+            <option key={cat.id} value={cat.code}>
               {cat.name}
             </option>
           ))}
@@ -85,8 +87,10 @@ export const FilterBar = ({ filters, onFilterChange }) => {
           className="px-4 py-2.5 border border-gray-200 rounded-lg text-gray-900 bg-white hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
         >
           <option value="all">Semua Status</option>
-          <option value="pending">Pending</option>
-          <option value="completed">Completed</option>
+          <option value="pending">Menunggu</option>
+          <option value="in_progress">Dikerjakan</option>
+          <option value="completed">Selesai</option>
+          <option value="cancelled">Dibatalkan</option>
         </select>
       </div>
     </div>

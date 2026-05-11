@@ -1,4 +1,4 @@
-Aplikasi To-Do List harian yang dibangun dengan React dan Express, menggunakan Firebase Firestore sebagai database.
+Aplikasi To-Do List harian yang dibangun dengan React dan Express, menggunakan PostgreSQL sebagai database.
 
 ## 🚀 Tech Stacks
 
@@ -12,7 +12,9 @@ Aplikasi To-Do List harian yang dibangun dengan React dan Express, menggunakan F
 ### Backend
 - **Node.js** - JavaScript runtime
 - **Express.js** - Web framework
-- **Firebase Admin SDK** - Firebase authentication dan Firestore
+- **PostgreSQL** - Database relasional untuk CRUD todo
+- **pg** - PostgreSQL client untuk Node.js
+- **JWT + RBAC** - Login, role admin/user, dan proteksi endpoint
 - **CORS** - Cross-Origin Resource Sharing
 
 ## 📁 Project Structure
@@ -33,8 +35,7 @@ ToDoListHarian/
 │   │   ├── context/
 │   │   │   └── TodoContext.jsx        # Global state management
 │   │   ├── utils/
-│   │   │   ├── constants.js           # Categories & priorities
-│   │   │   └── mockFirebase.js
+│   │   │   └── constants.js           # Categories & priorities
 │   │   ├── App.jsx                    # Main app component
 │   │   ├── main.jsx                   # Entry point
 │   │   ├── index.css                  # Global styles & animations
@@ -46,7 +47,7 @@ ToDoListHarian/
 ├── backend/
 │   ├── src/
 │   │   ├── config/
-│   │   │   └── firebase.js            # Firebase initialization
+│   │   │   └── database.js            # PostgreSQL connection pool
 │   │   ├── controllers/
 │   │   │   └── todo.controller.js     # Request handlers
 │   │   ├── models/
@@ -59,7 +60,8 @@ ToDoListHarian/
 │   │   │   └── response.js            # Response formatter
 │   │   └── index.js                   # Server entry point
 │   ├── package.json
-│   ├── serviceAccount.json            # Firebase credentials (gitignored)
+│   ├── database/
+│   │   └── schema.sql                 # SQL schema for todos table
 │   └── .env                           # Environment variables (gitignored)
 │
 └── .gitignore
@@ -71,7 +73,7 @@ ToDoListHarian/
 ### Prerequisites
 - Node.js (v14 atau lebih tinggi)
 - npm
-- Firebase project dengan Firestore database
+- PostgreSQL aktif di Laragon
 
 ### Setup
 
@@ -93,17 +95,18 @@ cd frontend
 npm install
 ```
 
-4. **Konfigurasi Firebase**
-   - Dapatkan `serviceAccount.json` dari Firebase Console
-   - Letakkan di folder `backend/`
-   - File ini sudah di-gitignore untuk keamanan
+4. **Konfigurasi PostgreSQL Laragon**
+   - Buat database bernama `todokpl_db`
+   - Salin `backend/.env.example` menjadi `backend/.env`
+   - Sesuaikan `DB_USER` dan `DB_PASSWORD` jika berbeda dari default Laragon/PostgreSQL Anda
+   - Ganti `JWT_SECRET` dengan string panjang dan acak
 
 ### Detailed Backend Setup
 
-1. **Firebase Initialization**
-   - Buat project baru di [Firebase Console](https://console.firebase.google.com)
-   - Enable Firestore Database
-   - Create Service Account dan download JSON key
+1. **PostgreSQL Initialization**
+   - Pastikan PostgreSQL Laragon berjalan
+   - Buat database `todokpl_db`
+   - Tabel `todos` akan dibuat otomatis saat backend start
    
 2. **Backend Configuration**
    ```bash
@@ -113,17 +116,17 @@ npm install
 
 3. **File Structure untuk Backend**
    - `src/index.js` - Entry point server (port 5000)
-   - `src/config/firebase.js` - Firebase initialization dengan serviceAccount.json
+   - `src/config/database.js` - PostgreSQL connection pool dan table initialization
    - `src/routes/todo.routes.js` - Define endpoints: GET, POST, PUT, DELETE
    - `src/controllers/todo.controller.js` - Handle request logic
-   - `src/services/todo.service.js` - Firestore database operations
+   - `src/services/todo.service.js` - PostgreSQL database operations
    - `src/models/todo.model.js` - Todo data schema dan validation
    - `src/utils/response.js` - Standardized API response format
 
 4. **Dependencies Backend**
    - express (v4.18.2) - Web framework
    - cors (v2.8.5) - Enable cross-origin requests
-   - firebase-admin (v12.0.0) - Firebase Firestore
+   - pg (v8.20.0) - PostgreSQL client
    - nodemon (dev) - Auto-reload server saat development
 
 ### Detailed Frontend Setup
@@ -202,6 +205,14 @@ npm run preview
 
 Base URL: `http://localhost:5000/api/todos`
 
+### Auth
+```
+POST /api/auth/register
+POST /api/auth/login
+GET /api/auth/me
+Header protected route: Authorization: Bearer <token>
+```
+
 ### Get All Todos
 ```
 GET /api/todos
@@ -229,6 +240,16 @@ Body: { ...fields to update }
 Response: { success: true, data: { message: "Todo updated" } }
 ```
 
+### Todo Status Automata
+```
+GET /api/todos/:id/transitions
+Response: { success: true, data: [{ fromStatus, toStatus, event, label }] }
+
+PATCH /api/todos/:id/status
+Body: { event: "start" | "pause" | "complete" | "cancel" | "reopen" }
+Response: { success: true, data: { id, status, statusName, completed, ... } }
+```
+
 ### Delete Todo
 ```
 DELETE /api/todos/:id
@@ -237,6 +258,13 @@ Response: { success: true, data: { message: "Todo deleted" } }
 
 ## ✨ Features
 
+- ✅ **Login & Register** - Akun pengguna dengan password hash
+- ✅ **JWT Token** - Proteksi API menggunakan Bearer token
+- ✅ **RBAC** - Role admin dapat melihat semua todo, user hanya todo miliknya
+- ✅ **Multi-table Database** - users, roles, permissions, categories, todos, activity logs
+- ✅ **Admin Panel** - Lihat pengguna dan aktivitas terbaru
+- ✅ **Automata Status Todo** - Workflow `pending -> in_progress -> completed/cancelled` divalidasi dari tabel transisi
+- ✅ **Parameterized Utilities** - Helper reusable untuk row mapping dan parameterized SQL update
 - ✅ **Create Todo** - Tambah todo baru dengan form modal
 - ✅ **Read Todo** - Lihat semua todos di dashboard
 - ✅ **Update Todo** - Edit todo yang sudah ada
@@ -252,11 +280,13 @@ Response: { success: true, data: { message: "Todo deleted" } }
 
 ```javascript
 {
-  id: string,                    // Firestore document ID
+  id: string,                    // PostgreSQL row ID
   title: string,                 // Required
   description: string,           // Optional
   category: string,              // 'work' | 'personal' | 'shopping' | 'health'
   priority: string,              // 'low' | 'medium' | 'high'
+  status: string,                // 'pending' | 'in_progress' | 'completed' | 'cancelled'
+  statusName: string,            // Label status untuk UI
   dueDate: string,              // YYYY-MM-DD format
   dueTime: string,              // HH:mm format
   completed: boolean,            // Default: false
@@ -282,3 +312,14 @@ Response: { success: true, data: { message: "Todo deleted" } }
 - Use `npm run dev` untuk development dengan hot reload
 - Use `npm run build` untuk production build
 - Use `npm run lint` untuk check code quality
+
+## ✅ Requirement KPL
+
+| Requirement | Status | Implementasi |
+|---|---|---|
+| Automata | Terpenuhi | Status todo dikelola sebagai finite-state machine melalui tabel `todo_statuses` dan `todo_status_transitions`. API `PATCH /api/todos/:id/status` hanya menerima event yang valid untuk status saat ini. |
+| Table-driven construction | Terpenuhi | Role-permission, kategori, status, dan transisi status semua digerakkan oleh tabel database. Field update juga memakai field map. |
+| Generics/Parameterization | Terpenuhi | SQL memakai parameter `$1`, `$2`, dan helper reusable `createRowMapper` serta `buildParameterizedUpdate` untuk mapping dan update yang dapat diparameterkan. |
+| Runtime Config | Terpenuhi | Koneksi PostgreSQL, JWT secret, masa berlaku token, dan admin default dibaca dari `.env`. |
+| API | Terpenuhi | REST API tersedia untuk auth, todo, status automata, users, categories, dan activity. |
+| Code Reuse/Libraries | Terpenuhi | Struktur service/controller/routes/utils reusable, serta library Express, pg, React, Vite, Tailwind, Lucide, dan crypto Node.js. |

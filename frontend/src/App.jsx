@@ -4,10 +4,14 @@ import { Dashboard } from "./components/Dashboard";
 import { FilterBar } from "./components/FilterBar";
 import { TodoCard } from "./components/TodoCard";
 import { TodoForm } from "./components/TodoForm";
+import { AuthPage } from "./components/AuthPage";
+import { AdminPanel } from "./components/AdminPanel";
 import { useTodos } from "./context/TodoContext";
+import { useAuth } from "./context/AuthContext";
 
 function AppContent() {
-  const { todos, addTodo, updateTodo, deleteTodo, toggleComplete } = useTodos();
+  const { todos, addTodo, updateTodo, deleteTodo, toggleComplete, transitionTodoStatus } = useTodos();
+  const { user, isAdmin, authLoading } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editingTodo, setEditingTodo] = useState(null);
   const [filters, setFilters] = useState({
@@ -16,6 +20,18 @@ function AppContent() {
     priority: "all",
     status: "all",
   });
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-600">
+        Memuat sesi...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthPage />;
+  }
 
   const filteredTodos = todos.filter((todo) => {
     if (!todo || !todo.id) return false;
@@ -34,6 +50,7 @@ function AppContent() {
 
     const matchesStatus =
       filters.status === "all" ||
+      todo.status === filters.status ||
       (filters.status === "completed" && todo.completed) ||
       (filters.status === "pending" && !todo.completed);
 
@@ -46,6 +63,7 @@ function AppContent() {
 
       <div className="w-screen px-6 py-6">
         <Dashboard />
+        {isAdmin && <AdminPanel />}
         <FilterBar filters={filters} onFilterChange={setFilters} />
 
         <button
@@ -70,6 +88,7 @@ function AppContent() {
                 }}
                 onDelete={deleteTodo}
                 onToggle={toggleComplete}
+                onTransition={transitionTodoStatus}
               />
             ))
           ) : (
