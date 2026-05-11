@@ -5,11 +5,11 @@ export const Navbar = () => {
   const { user, isAdmin, logout } = useAuth();
 
   return (
-    <nav className="w-full bg-white border-b border-gray-200 shadow-sm">
-      <div className="max-w-6xl mx-auto min-h-16 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+    <nav className="w-screen px-6 bg-white border-b border-gray-200 shadow-sm">
+      <div className="w-full mx-auto min-h-16 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div>
           <h1 className="text-lg sm:text-xl font-semibold text-gray-800">
-            To-Do List Harian
+            Daily To-Do List
           </h1>
           <p className="text-xs text-gray-500">Personal Todo list harian</p>
         </div>
@@ -24,7 +24,7 @@ export const Navbar = () => {
           </div>
           <button
             onClick={logout}
-            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
+            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition transform duration-300"
             title="Logout"
           >
             <LogOut size={18} />
