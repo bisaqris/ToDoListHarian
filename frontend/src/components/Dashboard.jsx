@@ -69,7 +69,7 @@ export const Dashboard = () => {
         <h3 className="text-lg font-semibold mb-2">Progress Completion</h3>
         <div className="flex items-center gap-4">
           <div className="flex-1">
-            <div className="bg-white bg-opacity-30 rounded-full h-4 overflow-hidden">
+            <div className="bg-white/30 rounded-full h-4 overflow-hidden">
               <div 
                 className="progress-bar bg-gradient-to-r from-green-400 to-green-500 h-full transition-all duration-700 ease-out rounded-full shadow-lg"
                 style={{ width: `${completionRate}%` }}

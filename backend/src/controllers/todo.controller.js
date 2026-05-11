@@ -4,19 +4,7 @@ import { validateId, validateTodoData } from "../utils/validate.js";
 
 export const create = async (req, res) => {
   try {
-    // [DbC — Precondition] Validasi body request dulu sebelum lanjut ke service
-    // isUpdate=false artinya field "title" wajib ada
-    validateTodoData(req.body, false);
-
-    const todo = await service.createTodo(req.body);
-
-    // [DbC — Postcondition] Setelah service jalan, pastikan hasilnya valid
-    // Kalau id tidak ada, berarti ada yang salah di service layer
-    if (!todo || !todo.id) {
-      throw new Error("Postcondition violated: created todo must have an id");
-    }
-
-    // [Code Reuse] Kirim response sukses dengan status 201 Created
+    const todo = await service.createTodo(req.body, req.user);
     success(res, todo, 201);
   } catch (err) {
     const code = err.statusCode || 400;
@@ -27,7 +15,7 @@ export const create = async (req, res) => {
 
 export const getAll = async (req, res) => {
   try {
-    const todos = await service.getTodos();
+    const todos = await service.getTodos(req.user);
     success(res, todos);
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
@@ -53,34 +41,58 @@ export const getById = async (req, res) => {
 
 export const update = async (req, res) => {
   try {
-    // [DbC — Precondition] Validasi ID dan body sebelum apapun dieksekusi
-    validateId(req.params.id);
-    validateTodoData(req.body, true); // isUpdate=true → semua field opsional
+    const todo = await service.updateTodo(req.params.id, req.body, req.user);
 
-    // [Defensive Programming] Body tidak boleh kosong saat update
-    // Kalau kosong, tidak ada yang diupdate — lebih baik langsung tolak
-    if (Object.keys(req.body).length === 0) {
-      return error(
-        res,
-        "Request body must contain at least one field to update",
-        400,
-      );
+    if (!todo) {
+      return res.status(404).json({ success: false, error: "Todo not found" });
     }
 
-    await service.updateTodo(req.params.id, req.body);
-    success(res, { message: "Todo updated" });
-  } catch (err) {
-    const code = err.statusCode || 400;
-    error(res, err.message, code, err.validationErrors || null);
+    success(res, todo);
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+export const transitionStatus = async (req, res) => {
+  try {
+    const todo = await service.transitionTodoStatus(
+      req.params.id,
+      req.body.event,
+      req.user,
+    );
+
+    if (!todo) {
+      return res.status(404).json({ success: false, error: "Todo not found" });
+    }
+
+    success(res, todo);
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+export const getTransitions = async (req, res) => {
+  try {
+    const transitions = await service.getTodoStatusTransitions(req.params.id, req.user);
+
+    if (!transitions) {
+      return res.status(404).json({ success: false, error: "Todo not found" });
+    }
+
+    success(res, transitions);
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
   }
 };
 
 export const remove = async (req, res) => {
   try {
-    // [DbC — Precondition] Validasi ID dulu sebelum minta service hapus data
-    validateId(req.params.id);
+    const deleted = await service.deleteTodo(req.params.id, req.user);
 
-    await service.deleteTodo(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, error: "Todo not found" });
+    }
+
     success(res, { message: "Todo deleted" });
   } catch (err) {
     const code = err.statusCode || 500;

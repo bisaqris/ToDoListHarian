@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { X, Save, Loader } from "lucide-react";
-import { categories, priorities } from "../utils/constants";
+import { priorities } from "../utils/constants";
+import { useTodos } from "../context/TodoContext";
 
 export const TodoForm = ({ todo, onSave, onCancel }) => {
+  const { categories } = useTodos();
+  const categoryOptions = categories.length > 0
+    ? categories.map((cat) => ({ id: cat.code, name: cat.name }))
+    : [{ id: "work", name: "Pekerjaan" }];
   const [formData, setFormData] = useState(
     todo || {
       title: "",
@@ -88,7 +93,7 @@ export const TodoForm = ({ todo, onSave, onCancel }) => {
                 }
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-300 transition-all"
               >
-                {categories.map((cat) => (
+                {categoryOptions.map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.name}
                   </option>

@@ -3,8 +3,23 @@ import { Edit2, Trash2, CheckCircle2, Circle, Calendar, Clock } from "lucide-rea
 import { CategoryBadge } from "./badges/CategoryBadge";
 import { PriorityBadge } from "./badges/PriorityBadge";
 
-export const TodoCard = ({ todo, onEdit, onDelete, onToggle }) => {
+const statusStyles = {
+  pending: "bg-gray-100 text-gray-700",
+  in_progress: "bg-blue-100 text-blue-700",
+  completed: "bg-green-100 text-green-700",
+  cancelled: "bg-red-100 text-red-700",
+};
+
+const primaryStatusEvents = {
+  pending: { event: "start", label: "Mulai" },
+  in_progress: { event: "complete", label: "Selesai" },
+  completed: { event: "reopen", label: "Buka Lagi" },
+  cancelled: { event: "reopen", label: "Buka Lagi" },
+};
+
+export const TodoCard = ({ todo, onEdit, onDelete, onToggle, onTransition }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const primaryEvent = primaryStatusEvents[todo.status || "pending"];
 
   return (
     <>
@@ -35,6 +50,9 @@ export const TodoCard = ({ todo, onEdit, onDelete, onToggle }) => {
             <div className="flex flex-wrap gap-2 mb-2">
               <CategoryBadge categoryId={todo.category} />
               <PriorityBadge priority={todo.priority} />
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${statusStyles[todo.status] || statusStyles.pending}`}>
+                {todo.statusName || "Menunggu"}
+              </span>
             </div>
             
             <div className="flex items-center gap-4 text-xs text-gray-500">
@@ -60,6 +78,14 @@ export const TodoCard = ({ todo, onEdit, onDelete, onToggle }) => {
           </div>
 
           <div className="flex gap-2">
+            {primaryEvent && (
+              <button
+                onClick={() => onTransition(todo.id, primaryEvent.event)}
+                className="px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 rounded"
+              >
+                {primaryEvent.label}
+              </button>
+            )}
             <button
               onClick={() => onEdit(todo)}
               className="p-2 text-blue-600 hover:bg-blue-50 rounded"
@@ -77,7 +103,7 @@ export const TodoCard = ({ todo, onEdit, onDelete, onToggle }) => {
       </div>
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 bg-opacity-30 flex items-center justify-center z-50 p-4 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm mx-4 animate-slideUp">
             <h3 className="text-2xl font-bold text-gray-900 mb-3">Hapus To-Do?</h3>
             <p className="text-gray-600 mb-6">Apakah Anda yakin ingin menghapus "{todo.title}"? Tindakan ini tidak dapat dibatalkan.</p>
