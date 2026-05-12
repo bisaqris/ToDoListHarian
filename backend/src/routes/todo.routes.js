@@ -12,5 +12,7 @@ router.get("/:id/transitions", controller.getTransitions);
 router.patch("/:id/status", controller.transitionStatus);
 router.put("/:id", controller.update);
 router.delete("/:id", controller.remove);
+router.get("/stats/monthly", authenticate, controller.getStats);
+router.get("/:id", authenticate, controller.update);
 
 export default router;
