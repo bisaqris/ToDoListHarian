@@ -1,6 +1,16 @@
 import * as service from "../services/todo.service.js";
 import { success } from "../utils/response.js";
 
+// Fungsi Report Bulanan
+export const getStats = async (req, res) => {
+  try {
+    const stats = await service.getMonthlyStats(req.user);
+    success(res, stats, 200, "Monthly statistics retrieved successfully");
+  } catch (error) {
+    res.status(500).json({success: false, error: error.message});
+  }
+};
+
 export const create = async (req, res) => {
   try {
     const todo = await service.createTodo(req.body, req.user);

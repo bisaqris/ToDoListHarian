@@ -5,6 +5,8 @@ export const Navbar = () => {
   const { user, isAdmin, logout } = useAuth();
 
   return (
+
+    
     <nav className="w-full bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-6xl mx-auto min-h-16 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div>
