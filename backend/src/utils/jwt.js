@@ -7,7 +7,7 @@ const base64Url = (value) =>
     .replace(/\+/g, "-")
     .replace(/\//g, "_");
 
-const parseDuration = (duration) => {
+export const parseDuration = (duration) => {
   const match = /^(\d+)([smhd])$/.exec(duration);
   if (!match) return 24 * 60 * 60;
 
