@@ -17,6 +17,16 @@ import { success, error } from "../utils/response.js";
 import { validateId, validateTodoData } from "../utils/validate.js";
 
 // ── CREATE ───────────────────────────────────────────────────
+// Fungsi Report Bulanan
+export const getStats = async (req, res) => {
+  try {
+    const stats = await service.getMonthlyStats(req.user);
+    success(res, stats, 200, "Monthly statistics retrieved successfully");
+  } catch (error) {
+    res.status(500).json({success: false, error: error.message});
+  }
+};
+
 export const create = async (req, res) => {
   try {
     // [DbC — Precondition] Validasi body request dulu sebelum lanjut ke service

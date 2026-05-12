@@ -342,3 +342,44 @@ export const deleteTodo = async (id, user) => {
     client.release();
   }
 };
+
+export const getMonthlyStats = async (user) => {
+  const params = [];
+  // Mengambil data 30 hari terakhir berdasarkan created_at
+  let whereClause = "WHERE t.created_at >= NOW() - INTERVAL '30 days'";
+
+  // Proteksi Role: User biasa hanya melihat miliknya, Admin melihat semua
+  if (!isAdmin(user)) {
+    params.push(user.id);
+    whereClause += " AND t.user_id = $1";
+  }
+
+  const query = `
+    SELECT 
+      COUNT(*) AS total,
+      SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) AS completed
+    FROM todos t
+    ${whereClause}
+  `;
+
+  try {
+    const result = await pool.query(query, params);
+    const data = result.rows[0];
+
+    const total = parseInt(data.total) || 0;
+    const completed = parseInt(data.completed) || 0;
+
+    // Perhitungan persentase yang benar
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    return {
+      total,
+      completed,
+      percentage,
+      period: "Last 30 Days"
+    };
+  } catch (error) {
+    console.error("Error fetching monthly stats:", error);
+    throw error;
+  }
+};

@@ -6,6 +6,7 @@ import userRoutes from "./routes/user.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import activityRoutes from "./routes/activity.routes.js";
 import { initDatabase } from "./config/database.js";
+import dotenv from "dotenv/config";
 
 const app = express();
 

@@ -8,6 +8,7 @@
     "start": "node src/index.js",
     "test": "node --test src/tests/*.test.js",
     "test:watch": "node --test --watch src/tests/*.test.js"
+    "perf": "node scripts/performance.mjs"
   },
   "dependencies": {
     "cors": "^2.8.5",
