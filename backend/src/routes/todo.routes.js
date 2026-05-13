@@ -10,6 +10,7 @@ router.get("/", controller.getAll);
 router.post("/", controller.create);
 router.get("/:id/transitions", controller.getTransitions);
 router.patch("/:id/status", controller.transitionStatus);
+router.get("/:id", controller.getById);
 router.put("/:id", controller.update);
 router.delete("/:id", controller.remove);
 router.get("/stats/monthly", authenticate, controller.getStats);

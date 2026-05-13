@@ -10,7 +10,7 @@ export const Navbar = () => {
       <div className="w-full mx-auto min-h-16 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div>
           <NavLink to="/">
-            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r bg-clip-text text-transparent from-[#b900bc] to-[#009cff]">
+            <h1 className="text-lg sm:text-xl font-bold bg-linear-to-r bg-clip-text text-transparent from-[#b900bc] to-[#009cff]">
               Daily To-Do List
             </h1>
             <p className="text-xs text-gray-500">Personal Todo list harian</p>
@@ -21,7 +21,7 @@ export const Navbar = () => {
           <NavLink
             to="/"
             className={({ isActive }) =>
-              `px-3 py-2 rounded-lg text-sm font-bold transition-colors duration-300 bg-gradient-to-r from-[#b900bc] to-[#009cff] bg-clip-text ${
+              `px-3 py-2 rounded-lg text-sm font-bold transition-colors duration-300 bg-linear-to-r from-[#b900bc] to-[#009cff] bg-clip-text ${
                 isActive
                   ? "text-transparent"
                   : "text-gray-700 font-medium hover:font-semibold hover:text-transparent"
@@ -33,7 +33,7 @@ export const Navbar = () => {
           <NavLink
             to="/history"
             className={({ isActive }) =>
-              `px-3 py-2 rounded-lg text-sm font-bold transition-colors duration-300 bg-gradient-to-r from-[#b900bc] to-[#009cff] bg-clip-text ${
+              `px-3 py-2 rounded-lg text-sm font-bold transition-colors duration-300 bg-linear-to-r from-[#b900bc] to-[#009cff] bg-clip-text ${
                 isActive
                   ? "text-transparent"
                   : "text-gray-700 font-medium hover:font-semibold hover:text-transparent"

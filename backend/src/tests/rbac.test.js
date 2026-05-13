@@ -16,13 +16,10 @@ describe("isAdmin", () => {
   });
 
   test("❌ user tanpa properti roles → falsy (undefined)", () => {
-    // isAdmin menggunakan optional chaining (?.) → hasilnya undefined (falsy), bukan false
-    // Catatan: jika ingin strict boolean, ubah implementasi menjadi: !!user?.roles?.includes("admin")
     assert.ok(!isAdmin({ id: "1" }));
   });
 
   test("❌ user null → falsy (undefined)", () => {
-    // Optional chaining pada null/undefined mengembalikan undefined
     assert.ok(!isAdmin(null));
   });
 
