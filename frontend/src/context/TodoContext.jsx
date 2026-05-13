@@ -11,7 +11,22 @@ export const TodoProvider = ({ children }) => {
   const [users, setUsers] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [monthlyStats, setMonthlyStats] = useState({total: 0, completed: 0, percentage: 0});
   const API_URL = `${API_BASE}/todos`;
+
+  // FUNCTION TO FETCH MONTHLY STATS
+  const fetchMonthlyStats = async () => {
+    if(!token) return;
+    try {
+      const res = await fetch(`${API_URL}/stats/monthly`, { headers: authHeaders });
+      const json = await res.json();
+      if (json.success) {
+        setMonthlyStats(json.data);
+      }
+    } catch (error) {
+      console.error("Error fetching monthly stats:", error);
+    }
+  };
 
   // GET ALL
   const fetchTodos = async () => {
@@ -77,6 +92,7 @@ export const TodoProvider = ({ children }) => {
       if (json.data && json.data.id) {
         setTodos(prev => [json.data, ...prev]);
         fetchAdminData();
+        fetchMonthlyStats();
         return json.data;
       } else {
         throw new Error("Invalid response from server: missing data.id");
@@ -119,6 +135,7 @@ export const TodoProvider = ({ children }) => {
         prev.filter(t => t && t.id).map(t => (t.id === id ? json.data : t))
       );
       fetchAdminData();
+      fetchMonthlyStats();
     } catch (error) {
       console.error("Error transitioning todo status:", error);
       throw error;
@@ -135,12 +152,12 @@ export const TodoProvider = ({ children }) => {
       if (!res.ok) throw new Error(json.error || "Failed to delete todo");
       setTodos(prev => prev.filter(t => t.id !== id));
       fetchAdminData();
+      fetchMonthlyStats();
     } catch (error) {
       console.error("Error deleting todo:", error);
       throw error;
     }
   };
-
 
   const toggleComplete = (id) => {
     const todo = todos.find(t => t.id === id);
@@ -153,11 +170,13 @@ export const TodoProvider = ({ children }) => {
       fetchTodos();
       fetchCategories();
       fetchAdminData();
+      fetchMonthlyStats();
     } else {
       setTodos([]);
       setCategories([]);
       setUsers([]);
       setActivities([]);
+      setMonthlyStats({ total: 0, completed: 0, percentage: 0 });
     }
   }, [token, isAdmin]);
 
@@ -169,6 +188,7 @@ export const TodoProvider = ({ children }) => {
         users,
         activities,
         loading,
+        monthlyStats,
         addTodo,
         updateTodo,
         transitionTodoStatus,
@@ -177,6 +197,7 @@ export const TodoProvider = ({ children }) => {
         fetchTodos,
         fetchCategories,
         fetchAdminData,
+        fetchMonthlyStats
       }}
     >
       {children}
