@@ -20,7 +20,7 @@ export const TODO_LIST_RULES = [
     field: "priority",
     type: "string",
     required: false,
-    allowedValues: ["low", "medium", "high"],
+    allowedValues: ["low", "medium", "high", "urgent"],
   },
   {
     field: "category",
