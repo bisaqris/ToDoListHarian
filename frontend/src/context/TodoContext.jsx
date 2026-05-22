@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "./AuthContext";
 
 const TodoContext = createContext();
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTodos = () => useContext(TodoContext);
 
 export const TodoProvider = ({ children }) => {
@@ -11,24 +12,50 @@ export const TodoProvider = ({ children }) => {
   const [users, setUsers] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [monthlyStats, setMonthlyStats] = useState({total: 0, completed: 0, percentage: 0});
+  // monthlyStats dihitung langsung dari todos (real-time, tidak perlu fetch backend)
+  const monthlyStats = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const monthlyTodos = (todos || []).filter((t) => {
+      if (!t || !t.id) return false;
+      if (t.dueDate) {
+        const [y, m] = t.dueDate.split("-").map(Number);
+        return y === year && m === month;
+      }
+      // Fallback: todo tanpa due_date, pakai createdAt
+      if (t.createdAt) {
+        const d = new Date(t.createdAt);
+        return d.getFullYear() === year && d.getMonth() + 1 === month;
+      }
+      return false;
+    });
+    const total = monthlyTodos.length;
+    const completed = monthlyTodos.filter(
+      (t) => t.status === "completed",
+    ).length;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, completed, percentage };
+  }, [todos]);
+  const [unfinishedYesterday, setUnfinishedYesterday] = useState([]);
   const API_URL = `${API_BASE}/todos`;
+  const REPORT_URL = `${API_BASE}/report`;
 
-  // FUNCTION TO FETCH MONTHLY STATS
-  const fetchMonthlyStats = async () => {
-    if(!token) return;
+  const fetchUnfinishedYesterday = async () => {
+    if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/stats/monthly`, { headers: authHeaders });
+      const res = await fetch(`${REPORT_URL}/unfinished-yesterday`, {
+        headers: authHeaders,
+      });
       const json = await res.json();
-      if (json.success) {
-        setMonthlyStats(json.data);
+      if (json.success && Array.isArray(json.data)) {
+        setUnfinishedYesterday(json.data);
       }
     } catch (error) {
-      console.error("Error fetching monthly stats:", error);
+      console.error("Error fetching unfinished yesterday:", error);
     }
   };
 
-  // GET ALL
   const fetchTodos = async () => {
     if (!token) return;
     setLoading(true);
@@ -36,7 +63,11 @@ export const TodoProvider = ({ children }) => {
       const res = await fetch(API_URL, { headers: authHeaders });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to fetch todos");
-      const todoData = Array.isArray(json.data) ? json.data : (json.data ? [json.data] : []);
+      const todoData = Array.isArray(json.data)
+        ? json.data
+        : json.data
+          ? [json.data]
+          : [];
       setTodos(todoData);
     } catch (error) {
       console.error("Error fetching todos:", error);
@@ -48,7 +79,9 @@ export const TodoProvider = ({ children }) => {
   const fetchCategories = async () => {
     if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}/categories`, { headers: authHeaders });
+      const res = await fetch(`${API_BASE}/categories`, {
+        headers: authHeaders,
+      });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to fetch categories");
       setCategories(Array.isArray(json.data) ? json.data : []);
@@ -84,15 +117,14 @@ export const TodoProvider = ({ children }) => {
         body: JSON.stringify(todo),
       });
       const json = await res.json();
-      
       if (!res.ok) {
-        throw new Error(`API Error: ${res.status} - ${json.message || json.error || res.statusText}`);
+        throw new Error(
+          `API Error: ${res.status} - ${json.message || json.error || res.statusText}`,
+        );
       }
-      
       if (json.data && json.data.id) {
-        setTodos(prev => [json.data, ...prev]);
+        setTodos((prev) => [json.data, ...prev]);
         fetchAdminData();
-        fetchMonthlyStats();
         return json.data;
       } else {
         throw new Error("Invalid response from server: missing data.id");
@@ -112,8 +144,8 @@ export const TodoProvider = ({ children }) => {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to update todo");
-      setTodos(prev =>
-        prev.filter(t => t && t.id).map(t => (t.id === id ? json.data : t))
+      setTodos((prev) =>
+        prev.filter((t) => t && t.id).map((t) => (t.id === id ? json.data : t)),
       );
       fetchAdminData();
     } catch (error) {
@@ -130,12 +162,17 @@ export const TodoProvider = ({ children }) => {
         body: JSON.stringify({ event }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to transition todo status");
-      setTodos(prev =>
-        prev.filter(t => t && t.id).map(t => (t.id === id ? json.data : t))
+      if (!res.ok)
+        throw new Error(json.error || "Failed to transition todo status");
+      setTodos((prev) =>
+        prev.filter((t) => t && t.id).map((t) => (t.id === id ? json.data : t)),
+      );
+      setUnfinishedYesterday((prev) =>
+        json.data?.status === "completed" || json.data?.status === "cancelled"
+          ? prev.filter((t) => t.id !== id)
+          : prev.map((t) => (t.id === id ? { ...t, ...json.data } : t)),
       );
       fetchAdminData();
-      fetchMonthlyStats();
     } catch (error) {
       console.error("Error transitioning todo status:", error);
       throw error;
@@ -150,9 +187,9 @@ export const TodoProvider = ({ children }) => {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to delete todo");
-      setTodos(prev => prev.filter(t => t.id !== id));
+      setTodos((prev) => prev.filter((t) => t.id !== id));
+      setUnfinishedYesterday((prev) => prev.filter((t) => t.id !== id));
       fetchAdminData();
-      fetchMonthlyStats();
     } catch (error) {
       console.error("Error deleting todo:", error);
       throw error;
@@ -160,23 +197,26 @@ export const TodoProvider = ({ children }) => {
   };
 
   const toggleComplete = (id) => {
-    const todo = todos.find(t => t.id === id);
-    const event = todo.completed ? "reopen" : "complete";
+    const todo =
+      todos.find((t) => t.id === id) ||
+      unfinishedYesterday.find((t) => t.id === id);
+    const event = todo?.completed ? "reopen" : "complete";
     transitionTodoStatus(id, event);
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (token) {
       fetchTodos();
       fetchCategories();
       fetchAdminData();
-      fetchMonthlyStats();
+      fetchUnfinishedYesterday();
     } else {
       setTodos([]);
       setCategories([]);
       setUsers([]);
       setActivities([]);
-      setMonthlyStats({ total: 0, completed: 0, percentage: 0 });
+      setUnfinishedYesterday([]);
     }
   }, [token, isAdmin]);
 
@@ -189,6 +229,7 @@ export const TodoProvider = ({ children }) => {
         activities,
         loading,
         monthlyStats,
+        unfinishedYesterday,
         addTodo,
         updateTodo,
         transitionTodoStatus,
@@ -197,7 +238,8 @@ export const TodoProvider = ({ children }) => {
         fetchTodos,
         fetchCategories,
         fetchAdminData,
-        fetchMonthlyStats
+        fetchUnfinishedYesterday,
+        REPORT_URL,
       }}
     >
       {children}

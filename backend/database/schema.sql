@@ -82,3 +82,35 @@ CREATE TABLE IF NOT EXISTS todo_activity_logs (
   details JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS daily_recap (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  recap_date DATE NOT NULL,
+  total_todos INTEGER NOT NULL DEFAULT 0,
+  completed_todos INTEGER NOT NULL DEFAULT 0,
+  unfinished_todos INTEGER NOT NULL DEFAULT 0,
+  completion_percentage NUMERIC(5,2) NOT NULL DEFAULT 0,
+  todo_details JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, recap_date)
+);
+
+CREATE TABLE IF NOT EXISTS monthly_report (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  year INTEGER NOT NULL,
+  month INTEGER NOT NULL,
+  total_active_days INTEGER NOT NULL DEFAULT 0,
+  avg_completion_percentage NUMERIC(5,2) NOT NULL DEFAULT 0,
+  total_todos INTEGER NOT NULL DEFAULT 0,
+  total_completed INTEGER NOT NULL DEFAULT 0,
+  most_productive_day DATE,
+  least_productive_day DATE,
+  streak_days INTEGER NOT NULL DEFAULT 0,
+  recommendations TEXT NOT NULL DEFAULT '',
+  is_effective BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, year, month)
+);

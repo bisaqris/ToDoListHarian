@@ -5,6 +5,13 @@ import { NavLink } from "react-router-dom";
 export const Navbar = () => {
   const { user, isAdmin, logout } = useAuth();
 
+  const navLinkClass = ({ isActive }) =>
+    `px-3 py-2 rounded-lg text-sm font-bold transition-colors duration-300 bg-gradient-to-r from-[#b900bc] to-[#009cff] bg-clip-text ${
+      isActive
+        ? "text-transparent"
+        : "text-gray-700 font-medium hover:font-semibold hover:text-transparent"
+    }`;
+
   return (
     <nav className="w-screen px-6 bg-white border-b border-gray-200 shadow-sm">
       <div className="w-full mx-auto min-h-16 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
@@ -17,29 +24,11 @@ export const Navbar = () => {
           </NavLink>
         </div>
 
-        <div className="flex flex-row justify-center gap-4">
-          <NavLink
-            to="/"
-            className={({ isActive }) =>
-              `px-3 py-2 rounded-lg text-sm font-bold transition-colors duration-300 bg-linear-to-r from-[#b900bc] to-[#009cff] bg-clip-text ${
-                isActive
-                  ? "text-transparent"
-                  : "text-gray-700 font-medium hover:font-semibold hover:text-transparent"
-              }`
-            }
-          >
+        <div className="flex flex-row justify-center gap-1">
+          <NavLink to="/" className={navLinkClass}>
             Home
           </NavLink>
-          <NavLink
-            to="/history"
-            className={({ isActive }) =>
-              `px-3 py-2 rounded-lg text-sm font-bold transition-colors duration-300 bg-linear-to-r from-[#b900bc] to-[#009cff] bg-clip-text ${
-                isActive
-                  ? "text-transparent"
-                  : "text-gray-700 font-medium hover:font-semibold hover:text-transparent"
-              }`
-            }
-          >
+          <NavLink to="/history" className={navLinkClass}>
             History
           </NavLink>
         </div>
