@@ -6,10 +6,12 @@ import { TodoForm } from "../components/TodoForm";
 import { AdminPanel } from "../components/AdminPanel";
 import { useTodos } from "../context/TodoContext";
 import { useAuth } from "../context/AuthContext";
+import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function Home() {
   const {
     todos,
+    unfinishedYesterday,
     addTodo,
     updateTodo,
     deleteTodo,
@@ -20,6 +22,7 @@ export default function Home() {
 
   const [showForm, setShowForm] = useState(false);
   const [editingTodo, setEditingTodo] = useState(null);
+  const [reminderCollapsed, setReminderCollapsed] = useState(false);
   const [filters, setFilters] = useState({
     search: "",
     category: "all",
@@ -29,30 +32,83 @@ export default function Home() {
 
   const filteredTodos = todos.filter((todo) => {
     if (!todo || !todo.id) return false;
-
     const searchLower = filters.search.toLowerCase();
     const matchesSearch =
       todo.title.toLowerCase().includes(searchLower) ||
       (todo.description &&
         todo.description.toLowerCase().includes(searchLower));
-
     const matchesCategory =
       filters.category === "all" || todo.category === filters.category;
-
     const matchesPriority =
       filters.priority === "all" || todo.priority === filters.priority;
-
     const matchesStatus =
       filters.status === "all" ||
       todo.status === filters.status ||
       (filters.status === "completed" && todo.completed) ||
       (filters.status === "pending" && !todo.completed);
-
     return matchesSearch && matchesCategory && matchesPriority && matchesStatus;
   });
 
   return (
     <section className="w-screen p-6">
+      {/* ── REMINDER SECTION: Todo Kemarin yang Belum Selesai ── */}
+      {unfinishedYesterday.length > 0 && (
+        <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 overflow-hidden shadow-sm">
+          {/* Header */}
+          <div
+            className="flex items-center justify-between px-5 py-4 cursor-pointer select-none"
+            onClick={() => setReminderCollapsed((prev) => !prev)}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-200 rounded-full">
+                <AlertTriangle size={18} className="text-amber-700" />
+              </div>
+              <div>
+                <h2 className="text-amber-900 font-bold text-base">
+                  Reminder: {unfinishedYesterday.length} Todo Kemarin Belum
+                  Selesai
+                </h2>
+                <p className="text-amber-600 text-xs mt-0.5">
+                  Selesaikan terlebih dahulu sebelum mengerjakan todo hari ini
+                </p>
+              </div>
+            </div>
+            <button className="text-amber-600 hover:text-amber-800 transition-colors">
+              {reminderCollapsed ? (
+                <ChevronDown size={20} />
+              ) : (
+                <ChevronUp size={20} />
+              )}
+            </button>
+          </div>
+
+          {/* Todo List */}
+          {!reminderCollapsed && (
+            <div className="px-5 pb-5 space-y-3 border-t border-amber-200 pt-4">
+              {unfinishedYesterday.map((todo) => (
+                <div key={todo.id} className="relative">
+                  {/* Badge "Kemarin" */}
+                  <div className="absolute -top-2 -right-1 z-10 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">
+                    Dari Kemarin
+                  </div>
+                  <TodoCard
+                    todo={todo}
+                    onEdit={(t) => {
+                      setEditingTodo(t);
+                      setShowForm(true);
+                    }}
+                    onDelete={deleteTodo}
+                    onToggle={toggleComplete}
+                    onTransition={transitionTodoStatus}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── MAIN DASHBOARD ── */}
       <Dashboard />
       {isAdmin && <AdminPanel />}
 
