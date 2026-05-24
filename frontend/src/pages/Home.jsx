@@ -32,6 +32,11 @@ export default function Home() {
 
   const filteredTodos = todos.filter((todo) => {
     if (!todo || !todo.id) return false;
+
+    if (todo.status === "Selesai" || todo.status === "completed" || todo.completed === true) {
+      return false;
+    }
+
     const searchLower = filters.search.toLowerCase();
     const matchesSearch =
       todo.title.toLowerCase().includes(searchLower) ||
@@ -46,6 +51,7 @@ export default function Home() {
       todo.status === filters.status ||
       (filters.status === "completed" && todo.completed) ||
       (filters.status === "pending" && !todo.completed);
+      
     return matchesSearch && matchesCategory && matchesPriority && matchesStatus;
   });
 
