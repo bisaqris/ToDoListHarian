@@ -1,9 +1,5 @@
 import { pool } from "../config/database.js";
 
-// ─────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────
-
 const toLocalDateString = (date) => {
   const d = new Date(date);
   const year = d.getFullYear();
@@ -92,14 +88,6 @@ const calculateStreak = (rows) => {
   return streak;
 };
 
-// ─────────────────────────────────────────────
-// LIVE DATA HARI INI (langsung dari tabel todos)
-// ─────────────────────────────────────────────
-
-/**
- * Baca langsung dari tabel todos untuk hari ini — tidak bergantung cron.
- * Digunakan untuk merge ke daily_recap agar kalender & chart selalu real-time.
- */
 const getTodayLiveData = async (userId) => {
   const today = todayStr();
 
@@ -128,13 +116,9 @@ const getTodayLiveData = async (userId) => {
     unfinished,
     percentage,
     todoDetails: todos,
-    isLive: true, // penanda bahwa ini data real-time, bukan dari daily_recap
+    isLive: true, 
   };
 };
-
-// ─────────────────────────────────────────────
-// DAILY RECAP
-// ─────────────────────────────────────────────
 
 export const runDailyRecap = async (targetDate = null) => {
   const recapDate =
@@ -206,9 +190,6 @@ export const recapForUser = async (userId, recapDate) => {
   return { recapDate, total, completed, unfinished, percentage };
 };
 
-/**
- * Ambil rekap harian dari DB + inject live data hari ini.
- */
 export const getDailyRecaps = async (user, year, month) => {
   const params = [user.id];
   let dateFilter = "";
@@ -260,12 +241,7 @@ export const getDailyRecaps = async (user, year, month) => {
   return rows;
 };
 
-// ─────────────────────────────────────────────
-// MONTHLY REPORT
-// ─────────────────────────────────────────────
-
 export const generateMonthlyReport = async (user, year, month) => {
-  // 1. Ambil daily_recap dari DB (hari-hari lalu)
   const recapsResult = await pool.query(
     `SELECT * FROM daily_recap
      WHERE user_id = $1
@@ -277,7 +253,6 @@ export const generateMonthlyReport = async (user, year, month) => {
 
   let rows = recapsResult.rows;
 
-  // 2. Inject live data hari ini jika bulan sekarang
   const now = new Date();
   const isCurrentMonth =
     parseInt(year) === now.getFullYear() &&
@@ -286,12 +261,10 @@ export const generateMonthlyReport = async (user, year, month) => {
   let liveToday = null;
   if (isCurrentMonth) {
     liveToday = await getTodayLiveData(user.id);
-    // Hapus baris hari ini dari rows DB (kalau ada), ganti dengan live
     const today = todayStr();
     rows = rows.filter((r) => toLocalDateString(r.recap_date) !== today);
   }
 
-  // 3. Ambil todos langsung dari DB untuk metrik total bulan ini
   const todosResult = await pool.query(
     `SELECT id, title, status, completed, priority, category, due_date, created_at
      FROM todos
@@ -311,7 +284,6 @@ export const generateMonthlyReport = async (user, year, month) => {
     (t) => t.status === "completed",
   ).length;
 
-  // 4. Gabungkan rows DB + live hari ini untuk hitung metrik harian
   const allDailyRows = [
     ...rows,
     ...(liveToday && liveToday.total > 0
@@ -374,7 +346,6 @@ export const generateMonthlyReport = async (user, year, month) => {
     streakDays,
   });
 
-  // 5. Simpan ke monthly_report (hanya untuk bulan lalu — bulan sekarang selalu fresh)
   if (!isCurrentMonth) {
     await pool.query(
       `INSERT INTO monthly_report
@@ -418,7 +389,6 @@ export const generateMonthlyReport = async (user, year, month) => {
     );
   }
 
-  // 6. Build dailyData untuk response (gabung DB + live)
   const dbDailyData = rows.map((r) => ({
     date: toLocalDateString(r.recap_date),
     total: parseInt(r.total_todos),
@@ -464,12 +434,10 @@ export const getOrGenerateMonthlyReport = async (user, year, month) => {
     parseInt(year) === now.getFullYear() &&
     parseInt(month) === now.getMonth() + 1;
 
-  // Bulan sekarang: selalu generate fresh (agar hari ini masuk)
   if (isCurrentMonth) {
     return generateMonthlyReport(user, year, month);
   }
 
-  // Bulan lalu: coba dari cache DB
   const existing = await pool.query(
     `SELECT * FROM monthly_report WHERE user_id = $1 AND year = $2 AND month = $3`,
     [user.id, year, month],
