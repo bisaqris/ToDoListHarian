@@ -7,7 +7,7 @@ export const getStats = async (req, res) => {
     const stats = await service.getMonthlyStats(req.user);
     success(res, stats, 200, "Monthly statistics retrieved successfully");
   } catch (error) {
-    res.status(500).json({success: false, error: error.message});
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -16,7 +16,7 @@ export const create = async (req, res) => {
     validateTodoData(req.body, false);
 
     const todo = await service.createTodo(req.body, req.user);
-    console.log(todo)
+    console.log(todo);
 
     if (!todo) {
       throw new Error("Postcondition violated: created todo must have an id");
@@ -74,9 +74,13 @@ export const update = async (req, res) => {
       );
     }
 
-    await service.updateTodo(req.params.id, req.body, req.user);
+    const updated = await service.updateTodo(req.params.id, req.body, req.user);
 
-    success(res, { message: "Todo updated" });
+    if (!updated) {
+      return error(res, `Todo with id '${req.params.id}' not found`, 404);
+    }
+
+    success(res, updated);
   } catch (err) {
     const code = err.statusCode || 400;
     error(res, err.message, code, err.validationErrors || null);

@@ -1,4 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { Navbar } from "./components/Navbar";
 import { AuthPage } from "./components/AuthPage";
 import { useAuth } from "./context/AuthContext";
